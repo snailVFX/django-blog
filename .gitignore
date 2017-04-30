@@ -1,0 +1,48 @@
+# Windows:
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Mac
+.DS_*
+
+# dir file:
+public/
+tmp/
+web/
+.idea/
+
+# Python:
+*.gz
+*.pyc
+*.py[cod]
+*.so
+*.egg
+*.egg-info
+dist
+build
+*.pot
+*.py[co]
+.tox/
+__pycache__
+MANIFEST
+docs/_build/
+docs/locale/
+node_modules/
+tests/coverage_html/
+tests/.coverage
+build/
+tests/report/
+
+# My configurations:
+db.ini
+deploy_key_rsa
+
+# supervisor
+*supervisor/*.log
+*supervisor/*.pid
+.*~
+
+# Redis
+*.rdb
+
