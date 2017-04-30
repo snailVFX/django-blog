@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-from posts.models import Author, Article, Tag, Category
-from posts.rest.serializers import (
-    AuthorSerializer, ArticleSerializer, TagSerializer, CategorySerializer
-)
-
-from django.db import transaction
 from django.db.models import Q
+from django.db import transaction
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
-# Create your views here.
+from apis.helpers import CustomPagination
+from posts.models import Author, Article, Tag, Category
+from posts.rest.serializers import (
+    AuthorSerializer, ArticleSerializer, TagSerializer, CategorySerializer
+)
 
 
 class AuthorViewSet(viewsets.ModelViewSet):
@@ -20,11 +19,13 @@ class AuthorViewSet(viewsets.ModelViewSet):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = CustomPagination
 
     def list(self, request):
         success = 1
         data = None
         msg = None
+        page = None
         try:
             search = request.GET.get('search', None)
             gender = request.GET.get('gender', None)
@@ -37,12 +38,14 @@ class AuthorViewSet(viewsets.ModelViewSet):
             elif gender == 'F':
                 gender_q = Q(gender=Author.FEMALE)
             queryset = self.queryset.filter(search_q, gender_q).distinct()
-            serializer = self.get_serializer(queryset, many=True)
+            page = self.paginate_queryset(queryset)
+            serializer = self.get_serializer(page, many=True)
             data = serializer.data
         except Exception, e:
             success = 0
             msg = unicode(e)
-        return Response({'success': success, 'data': data, 'msg': msg})
+        return self.get_paginated_response(
+            {'success': success, 'data': data, 'msg': msg})
 
     def create(self, request):
         """
@@ -138,31 +141,40 @@ class ArticleViewSet(viewsets.ModelViewSet):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = CustomPagination
 
     def list(self, request):
         success = 1
         data = None
         msg = None
+        page = None
         try:
             search = request.GET.get('search', None)
             ordering = request.GET.get('ordering', None)
+            status = request.GET.get('status', 'P')
             search_q = Q()
+            if status == 'D':
+                status_q = Q(status=Article.DRAFT)
+            else:
+                status_q = Q(status=Article.PUBLISHED)
             if search:
                 search_q = Q(Q(title__icontains=search)
                              | Q(tag__name__icontains=search)
                              | Q(category__name__icontains=search))
-            queryset = self.queryset.filter(search_q).distinct()
+            queryset = self.queryset.filter(search_q, status_q).distinct()
             # likes click_count 排序
             if ordering:
                 queryset = queryset.order_by('-%s' % ordering)
             else:
                 queryset = queryset.order_by('-is_top', '-created_time')
-            serializer = self.get_serializer(queryset, many=True)
+            page = self.paginate_queryset(queryset)
+            serializer = self.get_serializer(page, many=True)
             data = serializer.data
         except Exception, e:
             success = 0
             msg = unicode(e)
-        return Response({'success': success, 'data': data, 'msg': msg})
+        return self.get_paginated_response(
+            {'success': success, 'data': data, 'msg': msg})
 
     def create(self, request):
         """
@@ -284,6 +296,7 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = CustomPagination
 
     def list(self, request):
         success = 1
@@ -295,12 +308,14 @@ class TagViewSet(viewsets.ModelViewSet):
             if search:
                 search_q = Q(name__icontains=search)
             queryset = self.queryset.filter(search_q).distinct()
-            serializer = self.get_serializer(queryset, many=True)
+            page = self.paginate_queryset(queryset)
+            serializer = self.get_serializer(page, many=True)
             data = serializer.data
         except Exception, e:
             success = 0
             msg = unicode(e)
-        return Response({'success': success, 'data': data, 'msg': msg})
+        return self.get_paginated_response(
+            {'success': success, 'data': data, 'msg': msg})
 
     def create(self, request):
         """
@@ -386,6 +401,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = CustomPagination
 
     def list(self, request):
         success = 1
@@ -397,12 +413,14 @@ class CategoryViewSet(viewsets.ModelViewSet):
             if search:
                 search_q = Q(name__icontains=search)
             queryset = self.queryset.filter(search_q).distinct()
-            serializer = self.get_serializer(queryset, many=True)
+            page = self.paginate_queryset(queryset)
+            serializer = self.get_serializer(page, many=True)
             data = serializer.data
         except Exception, e:
             success = 0
             msg = unicode(e)
-        return Response({'success': success, 'data': data, 'msg': msg})
+        return self.get_paginated_response(
+            {'success': success, 'data': data, 'msg': msg})
 
     def create(self, request):
         """
